@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+	<string name="app_name">LanTalkExample</string>
+	<string name="menu_name">Your display name</string>
+	<string name="menu_color">Choose Color</string>
+	<string name="clients_list">Available</string>
+	<string name="error_recorder">RECORDING: %1$s</string>
+	<string name="error_playback">PLAYBACK: %1$s</string>
+	<string name="error_message">An error occurred while initializing an AudioRecord instance.</string>
+
+</resources>

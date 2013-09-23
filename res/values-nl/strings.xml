@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+	<string name="app_name">LanTalkVoorbeeld</string>
+	<string name="menu_name">Je weergave naam</string>
+	<string name="clients_list">Beschikbaar</string>
+	<string name="error_recorder">OPNEMEN: %1$s</string>
+	<string name="error_playback">AFSPELEN: %1$s</string>
+	<string name="error_message">Er is een fout opgetreden tijdens het maken van een AudioRecord object.</string>
+
+</resources>
