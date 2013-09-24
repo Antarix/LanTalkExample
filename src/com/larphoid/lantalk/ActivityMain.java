@@ -135,9 +135,26 @@ public class ActivityMain extends Activity implements OnClickListener, OnItemCli
 
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		if (keyCode == KeyEvent.KEYCODE_BACK) {
-			if (stopConnection()) return true;
+		switch (keyCode) {
+		case KeyEvent.KEYCODE_VOLUME_UP:
+			if (lanUdpComm.isConnected()) {
+				audio.adjustStreamVolume(AudioManager.STREAM_VOICE_CALL, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
+				return true;
+			}
+			break;
+		case KeyEvent.KEYCODE_VOLUME_DOWN:
+			if (lanUdpComm.isConnected()) {
+				audio.adjustStreamVolume(AudioManager.STREAM_VOICE_CALL, AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
+				return true;
+			}
+			break;
+		case KeyEvent.KEYCODE_BACK:
+			if (lanUdpComm.stopConnection()) {
+				stopConnection();
+				return true;
+			}
 			lanUdpComm.cleanup();
+			break;
 		}
 		return super.onKeyDown(keyCode, event);
 	}
@@ -174,7 +191,7 @@ public class ActivityMain extends Activity implements OnClickListener, OnItemCli
 
 	@Override
 	public void onClientEvent(final byte[] data, final int offset, final int dataLength, final DatagramPacket pack) {
-		if (player != null && player.playing) {
+		if (player != null && player.running) {
 			eventBuffer = ByteBuffer.wrap(data, offset, dataLength - offset);
 			player.playback.write(eventBuffer.array(), 0, dataLength - offset);
 		}
@@ -182,14 +199,15 @@ public class ActivityMain extends Activity implements OnClickListener, OnItemCli
 
 	@Override
 	public void onClientEndConnection(final DatagramPacket pack) {
-		stopConnection();
 		lanUdpComm.onClientEndConnection(pack);
+		lanUdpComm.stopConnection();
+		stopConnection();
 	}
 
 	@Override
 	public void onClientNotResponding(DatagramPacket pack) {
+		if (lanUdpComm.isConnected()) lanUdpComm.onClientNotResponding(pack);
 		stopConnection();
-		lanUdpComm.onClientNotResponding(pack);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------------------
@@ -236,7 +254,7 @@ public class ActivityMain extends Activity implements OnClickListener, OnItemCli
 			clientname.setVisibility(View.VISIBLE);
 		}
 	};
-	private Runnable endConnection = new Runnable() {
+	private Runnable stopConnection = new Runnable() {
 		@Override
 		public void run() {
 			clientname.setVisibility(View.GONE);
@@ -247,27 +265,24 @@ public class ActivityMain extends Activity implements OnClickListener, OnItemCli
 	private void startConnection(final String data[], final int offset, final DatagramPacket pack) {
 		recorder = new RecordAudioInBackground(this, lanUdpComm);
 		recorder.execute();
-		player = new PlaybackAudioInBackground(this, lanUdpComm);
+		player = new PlaybackAudioInBackground(this);
 		player.execute();
 		clientname.setKeepScreenOn(true);
 		clientname.setText(lanUdpComm.getClientName(pack.getAddress()));
 		runOnUiThread(startConnection);
 	}
 
-	private boolean stopConnection() {
-		final boolean result = lanUdpComm.stopConnection();
-		clientname.setKeepScreenOn(false);
-		clientname.setText("");
-		runOnUiThread(endConnection);
+	private void stopConnection() {
 		if (recorder != null && !recorder.isCancelled()) {
-			recorder.cancel(true);
+			recorder.cancelme();
 			recorder = null;
 		}
 		if (player != null && !player.isCancelled()) {
-			player.cancel(true);
+			player.cancelme();
 			player = null;
 		}
-		return result;
+		clientname.setKeepScreenOn(false);
+		clientname.setText("");
+		runOnUiThread(stopConnection);
 	}
-
 }

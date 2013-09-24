@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import android.app.Activity;
 import android.media.AudioRecord;
+import android.media.AudioTrack;
 import android.media.MediaRecorder;
 import android.os.AsyncTask;
 import android.widget.Toast;
@@ -45,9 +46,9 @@ public class RecordAudioInBackground extends AsyncTask<Void, double[], Void> {
 	@Override
 	protected Void doInBackground(Void... arg0) {
 		try {
-			while (!isCancelled() && running) {
+			while (running && !isCancelled()) {
 				read = recorder.read(inputbuffer, 0, ActivityMain.BLOCKSIZE);
-				if (read > 0) {
+				if (running && !isCancelled() && read > 0) {
 					out = lanUdpComm.GetClientEventBuffer();
 					for (int i = 0; i < read; i++) {
 						out.putShort(inputbuffer[i]);
@@ -55,13 +56,22 @@ public class RecordAudioInBackground extends AsyncTask<Void, double[], Void> {
 					lanUdpComm.sendClientPacket();
 				}
 			}
-			recorder.stop();
-			recorder.release();
+			cancelme();
 		} catch (Exception e) {
 			e.printStackTrace();
 			onError();
 		}
 		return null;
+	}
+
+	public void cancelme() {
+		if (running) {
+			running = false;
+			if (recorder != null && recorder.getState() == AudioTrack.STATE_INITIALIZED) {
+				recorder.stop();
+				recorder.release();
+			}
+		}
 	}
 
 	private void onError() {
